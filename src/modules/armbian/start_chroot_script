@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+#### armbian module — SSH hardening, groups, motd
+####
+#### This File is distributed under GPLv3
+####
+
+# shellcheck enable=require-variable-braces
+set -Ee
+
+# Source CustomPIOS common.sh
+# shellcheck disable=SC1091
+source /common.sh
+install_cleanup_trap
+
+### Helper func
+is_board_type() {
+    local board releasefile
+    board=""
+    releasefile="/etc/armbian-release"
+    if [[ -f "${releasefile}" ]]; then
+        board="$(grep "BOARD=" "${releasefile}" | cut -d'=' -f2)"
+    fi
+    echo "${board}"
+}
+
+if_group_exists_run() {
+    group=$1
+    if grep -q "${group}" /etc/group; then
+        "${@:2}"
+    fi
+}
+
+# passwordless sudo for user during runtime
+echo "${BASE_USER} ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+## Step 1: Install armbian specific packages
+apt update
+# shellcheck disable=SC2086
+check_install_pkgs ${ARMBIAN_DEPS}
+
+## Step 2: Manage groups
+groupadd gpio
+if_group_exists_run i2c usermod -aG i2c "${BASE_USER}"
+usermod -aG video,audio,plugdev,games,netdev,sudo,systemd-journal,gpio "${BASE_USER}"
+
+## Step 3: patch sshd_config (Trixie uses sshd_config.d/ drop-ins)
+echo_green "Hardening SSH config ..."
+# Trixie/Bookworm: patch main config if directives exist, otherwise use drop-in
+if grep -q "PermitRootLogin" /etc/ssh/sshd_config 2>/dev/null; then
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+else
+    mkdir -p /etc/ssh/sshd_config.d
+    echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/99-claudecodeos.conf
+fi
+sed -i 's/^X11Forwarding/#X11Forwarding/' /etc/ssh/sshd_config 2>/dev/null || true
+sed -i 's/^#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config 2>/dev/null || true
+
+## Step 3b: Ensure SSH host keys will be generated at first boot
+echo_green "Ensuring SSH host key regeneration at first boot ..."
+# Remove existing host keys so they get regenerated on first boot
+rm -f /etc/ssh/ssh_host_*
+# Create a first-boot service to regenerate keys if Armbian's service is missing
+cat > /etc/systemd/system/ssh-keygen.service << 'SSHEOF'
+[Unit]
+Description=Generate SSH host keys if missing
+Before=ssh.service
+ConditionPathExistsGlob=!/etc/ssh/ssh_host_*_key
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -A
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SSHEOF
+systemctl enable ssh-keygen.service
+# Make sure ssh service is enabled
+systemctl enable ssh.service || systemctl enable sshd.service || true
+
+## Step 4: Remove first login prompt
+if [[ -f "/root/.not_logged_in_yet" ]]; then
+    rm -f /root/.not_logged_in_yet
+fi
+
+## Step 5: Patch dynamic motd
+echo_green "Patch dynamic motd ..."
+unpack /filesystem/root /
+chmod +x /etc/update-motd.d/*
+if [[ -f "/etc/default/armbian-motd" ]]; then
+    sed -i 's/MOTD_DISABLE=""/MOTD_DISABLE="header"/' /etc/default/armbian-motd
+fi
+
+## Step 6: Enable SPI interface
+echo_green "Enable SPI interface on SmartPi ..."
+cp "${ARMBIAN_CONFIG_TXT_FILE}" "${ARMBIAN_CONFIG_BAK_FILE}"
+echo "spi-dev" >> "${ARMBIAN_MODULES_FILE}"
+
+## Step 7: Remove unattended-upgrades
+echo_green "Remove 'unattended-upgrades' service ..."
+apt-get remove --purge --yes unattended-upgrades || true

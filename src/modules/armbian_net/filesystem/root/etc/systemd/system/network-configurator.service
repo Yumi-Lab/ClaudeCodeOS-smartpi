@@ -1,0 +1,15 @@
+[Unit]
+Description=Network Configurator (reads /boot/network_config.txt)
+DefaultDependencies=no
+Before=network-pre.target
+Wants=network-pre.target
+After=local-fs.target
+ConditionPathExists=/boot/network_config.txt
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/network-configurator
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

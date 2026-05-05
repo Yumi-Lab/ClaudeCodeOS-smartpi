@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Shebang for better file detection
+#### yumios module config
+####
+#### This File is distributed under GPLv3
+####
+
+#### Minimal toolset for Claude Code usage
+[ -n "$YUMIOS_DEPS" ] || YUMIOS_DEPS="htop nano usbutils ncdu lsof"

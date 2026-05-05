@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+#### claudecode module — Install Node.js and Claude Code CLI
+####
+#### ClaudeCodeOS-smartpi
+#### This File is distributed under GPLv3
+####
+
+# shellcheck enable=require-variable-braces
+set -Ee
+
+# Set DEBIAN_FRONTEND to noninteractive
+if [[ "${DEBIAN_FRONTEND}" != "noninteractive" ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+fi
+
+# Source CustomPIOS common.sh
+# shellcheck disable=SC1091
+source /common.sh
+install_cleanup_trap
+
+## Step 1: Install system dependencies
+echo_green "Installing Claude Code dependencies ..."
+apt-get update
+# shellcheck disable=SC2086
+check_install_pkgs ${CLAUDECODE_DEPS}
+
+## Step 2: Install Node.js from Debian repos (Trixie has Node.js 20 natively)
+echo_green "Installing Node.js from Debian Trixie repos (armhf supported) ..."
+apt-get install --yes nodejs npm
+
+echo_green "Node.js version: $(node --version)"
+echo_green "npm version: $(npm --version)"
+
+## Step 3: Create swap for npm install (1GB RAM is tight)
+echo_green "Creating temporary swap for npm install ..."
+if [[ ! -f /var/swap ]]; then
+    dd if=/dev/zero of=/var/swap bs=1M count="${CLAUDECODE_SWAP_SIZE}"
+    chmod 600 /var/swap
+    mkswap /var/swap
+fi
+swapon /var/swap || true
+
+## Step 4: Install Claude Code CLI globally
+echo_green "Installing Claude Code CLI (${CLAUDECODE_NPM_PACKAGE}) ..."
+npm install -g "${CLAUDECODE_NPM_PACKAGE}"
+
+# Verify installation
+echo_green "npm global root: $(npm root -g)"
+ls -la "$(npm root -g)/" || true
+
+# Ensure claude binary is in PATH and executable
+if command -v claude > /dev/null 2>&1; then
+    echo_green "Claude CLI found at: $(command -v claude)"
+else
+    # npm 9 on Debian puts binaries in /usr/local/bin
+    echo_green "Searching for claude binary ..."
+    find /usr/local -name "claude" -type f 2>/dev/null || true
+    # Create symlink if binary exists in node_modules but not in PATH
+    CLAUDE_PKG_BIN="$(npm root -g)/claude-code/cli.js"
+    if [[ -f "${CLAUDE_PKG_BIN}" ]]; then
+        ln -sf "${CLAUDE_PKG_BIN}" /usr/local/bin/claude
+        chmod +x /usr/local/bin/claude
+        echo_green "Created symlink /usr/local/bin/claude -> ${CLAUDE_PKG_BIN}"
+    fi
+fi
+
+## Step 5: Cleanup swap (will be re-created at boot if needed)
+swapoff /var/swap || true
+
+## Step 6: Configure persistent swap for runtime
+echo_green "Configuring persistent swap ..."
+cat > /etc/systemd/system/swap.service << 'SWAPEOF'
+[Unit]
+Description=Enable swap file
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/swapon /var/swap
+ExecStop=/sbin/swapoff /var/swap
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SWAPEOF
+systemctl enable swap.service
+
+## Step 7: Set sysctl optimizations for low-RAM usage
+echo_green "Applying memory optimizations ..."
+cat > /etc/sysctl.d/99-claudecode.conf << 'SYSEOF'
+# Reduce swap usage — prefer keeping processes in RAM
+vm.swappiness=10
+# Optimize for SD card
+vm.vfs_cache_pressure=50
+# Reduce dirty page writeback for SD longevity
+vm.dirty_ratio=40
+vm.dirty_background_ratio=10
+SYSEOF
+
+## Step 8: Create claude user directory structure
+echo_green "Setting up Claude Code user environment ..."
+mkdir -p "/home/${BASE_USER}/.claude"
+chown -R "$(id -u "${BASE_USER}")":"$(id -g "${BASE_USER}")" "/home/${BASE_USER}/.claude"
+
+## Step 9: Add MOTD instructions
+echo_green "Adding Claude Code MOTD ..."
+cat > /etc/update-motd.d/99-claudecode << 'MOTDEOF'
+#!/bin/bash
+echo ""
+echo "  Claude Code CLI is pre-installed!"
+echo "  ----------------------------------"
+echo "  Run: claude"
+echo ""
+MOTDEOF
+chmod +x /etc/update-motd.d/99-claudecode
+
+echo_green "Claude Code module installation complete!"

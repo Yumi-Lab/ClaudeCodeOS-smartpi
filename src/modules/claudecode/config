@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Shebang for better file detection
+#### claudecode module config
+####
+#### ClaudeCodeOS-smartpi — Pre-installed Claude Code CLI
+#### This File is distributed under GPLv3
+####
+
+# shellcheck disable=all
+
+# Node.js version (LTS — armhf supported)
+[[ -n "$CLAUDECODE_NODE_MAJOR" ]] || CLAUDECODE_NODE_MAJOR="20"
+
+# Claude Code package
+[[ -n "$CLAUDECODE_NPM_PACKAGE" ]] || CLAUDECODE_NPM_PACKAGE="@anthropic-ai/claude-code"
+
+# System dependencies
+[[ -n "$CLAUDECODE_DEPS" ]] || CLAUDECODE_DEPS="curl git build-essential"
+
+# Swap size in MB (needed for npm install on 1GB RAM)
+[[ -n "$CLAUDECODE_SWAP_SIZE" ]] || CLAUDECODE_SWAP_SIZE="1024"

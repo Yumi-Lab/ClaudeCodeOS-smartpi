@@ -1,0 +1,7 @@
+#### Configure workflow matrix
+
+buildtest:
+  - armbian/smartpi1
+
+release:
+  - armbian/smartpi1
