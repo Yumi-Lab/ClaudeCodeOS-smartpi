@@ -75,7 +75,8 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 SSHEOF
 systemctl enable ssh-keygen.service
-# Make sure ssh service is enabled
+# Make sure ssh service is enabled (disable socket activation to avoid conflict)
+systemctl disable ssh.socket 2>/dev/null || true
 systemctl enable ssh.service || systemctl enable sshd.service || true
 
 ## Step 4: Remove first login prompt
@@ -94,7 +95,7 @@ fi
 ## Step 6: Enable SPI interface
 echo_green "Enable SPI interface on SmartPi ..."
 cp "${ARMBIAN_CONFIG_TXT_FILE}" "${ARMBIAN_CONFIG_BAK_FILE}"
-echo "spi-dev" >> "${ARMBIAN_MODULES_FILE}"
+echo "spidev" >> "${ARMBIAN_MODULES_FILE}"
 
 ## Step 7: Remove unattended-upgrades
 echo_green "Remove 'unattended-upgrades' service ..."

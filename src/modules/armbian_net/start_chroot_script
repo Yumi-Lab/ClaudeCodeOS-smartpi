@@ -35,7 +35,7 @@ fi
 ## Step 6: patch /usr/local/bin/network-configurator
 if [[ -f "${ARMBIAN_NET_NC_PATH}" ]]; then
     sed -i 's|armbian_first_run.txt|network_config.txt|g' "${ARMBIAN_NET_NC_PATH}"
-    sed -i 's|FR|NC|g' "${ARMBIAN_NET_NC_PATH}"
+    sed -i 's|^FR_|NC_|g' "${ARMBIAN_NET_NC_PATH}"
     sed -i 's|do_firstrun_automated_user_configuration|do_network_configuration|g' "${ARMBIAN_NET_NC_PATH}"
 fi
 
