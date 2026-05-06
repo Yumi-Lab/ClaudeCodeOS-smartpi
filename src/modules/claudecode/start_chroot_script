@@ -48,13 +48,8 @@ npm install -g "${CLAUDECODE_NPM_PACKAGE}"
 echo_green "Installing Claude Code Web UI from Yumi Lab fork ..."
 unpack /filesystem/root/opt /opt
 
-# Build backend (frontend is pre-built)
-cd /opt/claude-code-webui/backend
-npm install
-npm run build
-
 # Create global symlink for CLI
-ln -sf /opt/claude-code-webui/backend/dist/cli/node.js /usr/local/bin/claude-code-webui
+ln -sf /opt/claude-code-webui/cli/node.js /usr/local/bin/claude-code-webui
 chmod +x /usr/local/bin/claude-code-webui
 
 # Verify installation
