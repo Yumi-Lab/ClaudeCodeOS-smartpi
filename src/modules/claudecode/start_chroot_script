@@ -44,9 +44,18 @@ swapon /var/swap || true
 echo_green "Installing Claude Code CLI (${CLAUDECODE_NPM_PACKAGE}) ..."
 npm install -g "${CLAUDECODE_NPM_PACKAGE}"
 
-## Step 4b: Install Claude Code Web UI
-echo_green "Installing Claude Code Web UI (claude-code-webui) ..."
-npm install -g claude-code-webui
+## Step 4b: Install Claude Code Web UI (Yumi Lab fork with API + Cron)
+echo_green "Installing Claude Code Web UI from Yumi Lab fork ..."
+unpack /filesystem/root/opt /opt
+
+# Build backend (frontend is pre-built)
+cd /opt/claude-code-webui/backend
+npm install
+npm run build
+
+# Create global symlink for CLI
+ln -sf /opt/claude-code-webui/backend/dist/cli/node.js /usr/local/bin/claude-code-webui
+chmod +x /usr/local/bin/claude-code-webui
 
 # Verify installation
 echo_green "npm global root: $(npm root -g)"
@@ -118,7 +127,7 @@ Type=simple
 User=${BASE_USER}
 WorkingDirectory=/home/${BASE_USER}
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-ExecStart=/usr/bin/claude-code-webui --host 0.0.0.0 --port 8080
+ExecStart=/usr/local/bin/claude-code-webui --host 0.0.0.0 --port 8080
 Restart=on-failure
 RestartSec=5
 
