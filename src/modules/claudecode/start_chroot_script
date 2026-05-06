@@ -44,6 +44,10 @@ swapon /var/swap || true
 echo_green "Installing Claude Code CLI (${CLAUDECODE_NPM_PACKAGE}) ..."
 npm install -g "${CLAUDECODE_NPM_PACKAGE}"
 
+## Step 4b: Install Claude Code Web UI
+echo_green "Installing Claude Code Web UI (claude-code-webui) ..."
+npm install -g claude-code-webui
+
 # Verify installation
 echo_green "npm global root: $(npm root -g)"
 ls -la "$(npm root -g)/" || true
@@ -102,14 +106,36 @@ echo_green "Setting up Claude Code user environment ..."
 mkdir -p "/home/${BASE_USER}/.claude"
 chown -R "$(id -u "${BASE_USER}")":"$(id -g "${BASE_USER}")" "/home/${BASE_USER}/.claude"
 
-## Step 9: Add MOTD instructions
+## Step 9: Create Claude Code Web UI systemd service
+echo_green "Creating Claude Code Web UI service ..."
+cat > /etc/systemd/system/claude-webui.service << WEBUIEOF
+[Unit]
+Description=Claude Code Web UI
+After=network.target
+
+[Service]
+Type=simple
+User=${BASE_USER}
+WorkingDirectory=/home/${BASE_USER}
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/claude-code-webui --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+WEBUIEOF
+systemctl enable claude-webui.service
+
+## Step 10: Add MOTD instructions
 echo_green "Adding Claude Code MOTD ..."
 cat > /etc/update-motd.d/99-claudecode << 'MOTDEOF'
 #!/bin/bash
 echo ""
-echo "  Claude Code CLI is pre-installed!"
-echo "  ----------------------------------"
-echo "  Run: claude"
+echo "  Claude Code OS — SmartPi One"
+echo "  -----------------------------"
+echo "  CLI:  claude"
+echo "  Web:  http://$(hostname -I | awk '{print $1}'):8080"
 echo ""
 MOTDEOF
 chmod +x /etc/update-motd.d/99-claudecode
