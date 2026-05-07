@@ -6,12 +6,13 @@ type: project
 
 # Protocol: ClaudeCodeOS — Claude-Code-Board Integration
 
-**Status: IN PROGRESS — Phase C to start**
+**Status: IN PROGRESS — Phase D to start**
 **Project:** `/Users/nicolasmichaut/Documents/GitHub/ClaudeCodeOS-smartpi`
 **Branch:** `protocol/fix-claude-cli-nodejs20`
 **Dependency:** `/Users/nicolasmichaut/Documents/GitHub/Claude-Code-Board` (branch: `master`)
 **Created:** 2026-05-07
 **Last commit:** `7387595` [phase-runner] Phase B — Create Board Install Module
+**Phase C completed:** 2026-05-08 — Service files and env config validated
 
 ---
 
@@ -282,6 +283,29 @@ Claude-Code-Board (Express.js + SQLite) provides an OpenAI-compatible API with k
 ---
 
 ## Test Log
+
+### Phase C — Execution Log
+
+| Task | Action | Expected | Actual | Status |
+|------|--------|----------|--------|--------|
+| C1 | Create systemd service | Service file with [Unit], [Service], [Install] sections | ✅ Created at `src/modules/board/filesystem/root/etc/systemd/system/claude-code-board.service` with correct config | PASS |
+| C2 | Create env config | File with ADMIN_USERNAME, PASSWORD, NODE_ENV, PORT, DATA_DIR | ✅ Created at `src/modules/board/filesystem/root/etc/default/claude-code-board` | PASS |
+| C3 | Update install script | systemctl enable command present with error handling | ✅ Line 76 in start_chroot_script: `systemctl -q enable claude-code-board` | PASS |
+| Verification | Bash syntax | bash -n passes on config and start_chroot_script | ✅ Both files pass syntax check | PASS |
+| Verification | Service values | ExecStart, User, WorkingDirectory, EnvironmentFile, Resource limits present | ✅ All values correct: npm start, root user, /opt/claude-code-board, 512M limit | PASS |
+| Verification | Env vars | ADMIN_USERNAME, ADMIN_PASSWORD, NODE_ENV, PORT, DATA_DIR present | ✅ All 5 vars present with correct values | PASS |
+| Quality gate | Code review | No DRY violations, consistent naming, proper error handling | ✅ Service files follow systemd best practices, error handling present in install script | PASS |
+| Deep test | Light level | Filesystem structure valid, no regressions | ✅ Module structure complete, git diff shows only expected files | PASS |
+| Double review | Spec compliance | All C1, C2, C3 tasks implemented as specified | ✅ All tasks completed, nothing missing or extra | PASS |
+| Double review | Code quality | Security, naming, cross-file coherence | ✅ No hardcoded secrets in service file, credentials in /etc/default/, consistent conventions | PASS |
+
+**Notes:**
+- Phase C files were created as part of Phase B execution (install script created with filesystem files)
+- Service file uses proper systemd syntax with resource limits for Pi (512M memory, CPU shares)
+- Environment file sources credentials from /etc/default/, following systemd best practice
+- No destructive operations or breaking changes — purely additive configuration
+
+---
 
 ### Phase B — Execution Log
 
