@@ -1,0 +1,4 @@
+[submodule "src/modules/board/vendor/claude-code-board"]
+	path = src/modules/board/vendor/claude-code-board
+	url = https://github.com/Yumi-Lab/Claude-Code-Board.git
+	branch = master
