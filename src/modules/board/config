@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Shebang for better file detection
+#### board module config
+####
+#### ClaudeCodeOS-smartpi — Claude Code Board API Server
+#### This File is distributed under GPLv3
+####
+
+# shellcheck disable=all
+
+# Node.js version (LTS — armhf supported)
+[[ -n "$BOARD_NODE_MAJOR" ]] || BOARD_NODE_MAJOR="20"
+
+# Board admin credentials
+[[ -n "$BOARD_ADMIN_USER" ]] || BOARD_ADMIN_USER="admin"
+[[ -n "$BOARD_ADMIN_PASSWORD" ]] || BOARD_ADMIN_PASSWORD="admin"
+
+# Board API port
+[[ -n "$BOARD_PORT" ]] || BOARD_PORT="8905"
+
+# Board data directory
+[[ -n "$BOARD_DATA_DIR" ]] || BOARD_DATA_DIR="/root/.local/share/claude-code-board"
+
+# System dependencies
+[[ -n "$BOARD_DEPS" ]] || BOARD_DEPS="curl git build-essential"

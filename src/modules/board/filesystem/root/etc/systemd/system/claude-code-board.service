@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude Code Board API Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/claude-code-board
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=10
+
+# Environment configuration file
+EnvironmentFile=/etc/default/claude-code-board
+
+# Resource limits (Pi constraint)
+CPUShares=1024
+MemoryLimit=512M
+
+[Install]
+WantedBy=multi-user.target

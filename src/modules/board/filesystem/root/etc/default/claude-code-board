@@ -1,0 +1,8 @@
+# Claude Code Board Configuration
+# This file is sourced by the systemd service
+
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+NODE_ENV=production
+PORT=8905
+DATA_DIR=/root/.local/share/claude-code-board
