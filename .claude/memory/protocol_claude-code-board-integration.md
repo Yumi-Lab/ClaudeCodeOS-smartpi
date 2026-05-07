@@ -6,14 +6,15 @@ type: project
 
 # Protocol: ClaudeCodeOS — Claude-Code-Board Integration
 
-**Status: IN PROGRESS — Phase E to start**
+**Status: COMPLETE — All phases validated**
 **Project:** `/Users/nicolasmichaut/Documents/GitHub/ClaudeCodeOS-smartpi`
 **Branch:** `protocol/fix-claude-cli-nodejs20`
 **Dependency:** `/Users/nicolasmichaut/Documents/GitHub/Claude-Code-Board` (branch: `master`)
 **Created:** 2026-05-07
-**Last commit:** `2beb4c1` [phase-runner] Phase D — Update Image Build Config
+**Last commit:** `ee770cd` [phase-runner] Phase E — Clone Claude Code Board from GitHub during build
 **Phase C completed:** 2026-05-08 — Service files and env config validated
 **Phase D completed:** 2026-05-08 — Image build config updated with board module
+**Phase E completed:** 2026-05-08 — CI build successful (Run #25508778788)
 
 ---
 
@@ -369,10 +370,49 @@ Claude-Code-Board (Express.js + SQLite) provides an OpenAI-compatible API with k
 
 ---
 
+## Phase E — Execution Log (In Progress)
+
+**Build Attempt 1 (Run 25507571206)** — FAILED
+| Task | Error | Root Cause | Fix |
+|------|-------|-----------|-----|
+| E1-E2 | `Unsupported architecture: armhf` | NodeSource doesn't support 32-bit ARM | Replace with Debian packages |
+
+**Build Attempt 2 (Run 25507790616)** — FAILED  
+| Task | Error | Root Cause | Fix |
+|------|-------|-----------|-----|
+| E1-E2 | `Unsupported architecture: armhf` | First fix (board module) didn't pick up in build | Simplified approach |
+
+**Build Attempt 3 (Run 25508112939)** — FAILED
+| Task | Error | Root Cause | Fix |
+|------|-------|-----------|-----|
+| E1-E2 | `Unsupported architecture: armhf` | `claudecode` module ALSO uses NodeSource and runs first | Fixed claudecode module too |
+
+**Build Attempt 4 (Run 25508410922)** — FAILED
+| Task | Error | Root Cause | Fix |
+|------|-------|-----------|-----|
+| E1-E2 | `ERROR: Submodule not found at /vendor/claude-code-board` | Submodule not copied to chroot /vendor path | Clone from GitHub during build |
+
+**Build Attempt 5 (Run 25508778788)** — ✅ SUCCESS
+| Task | Result | Status |
+|------|--------|--------|
+| E1 | Push to GitHub | ✅ Branch pushed |
+| E2 | Trigger CI build | ✅ GitHub Actions workflow executed |
+| E3 | Monitor build | ✅ Build completed successfully |
+| Verification | Artifacts generated | ✅ Image build and checksums created |
+| Jobs | setup + build(armbian/smartpi1) | ✅ Both jobs completed |
+
+**Fixes Applied:**
+1. ✅ `src/modules/claudecode/start_chroot_script` — Use Debian packages instead of NodeSource
+2. ✅ `src/modules/board/start_chroot_script` — Use Debian packages and clone from GitHub
+3. ✅ Protocol file updated with latest commit references
+
+---
+
 ## Notes
 
-- **Node.js version:** Board uses LTS 20 (same as Claude Code CLI) — already installed in `claudecode` module
+- **Node.js version:** Board uses LTS 20 (same as Claude Code CLI) — now installed from Debian packages for armhf compatibility
+- **Architecture support:** Debian packages support armhf, arm64, amd64 whereas NodeSource only supports arm64, amd64
+- **Repository cloning:** Claude-Code-Board is now cloned directly from GitHub during build instead of relying on submodule unpacking
 - **Systemd hardening:** Consider later — `MemoryLimit=512M`, `CPUShares` may need tuning on real hardware
 - **Password security:** `.env.dev` pattern from Phase Runner; avoid hardcoding in service file later
-- **Submodule updates:** After integration, fetch updates with: `git submodule update --remote`
 
