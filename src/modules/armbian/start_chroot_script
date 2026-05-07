@@ -74,22 +74,24 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 SSHEOF
-systemctl enable ssh-keygen.service
-# Make sure ssh service is enabled (disable socket activation to avoid conflict)
-systemctl disable ssh.socket 2>/dev/null || true
-systemctl enable ssh.service || systemctl enable sshd.service || true
-# Verify SSH is properly configured to auto-start on boot
-echo_green "Verifying SSH auto-start configuration ..."
-if systemctl is-enabled ssh.service > /dev/null 2>&1; then
-    echo_green "SSH service is enabled ✓"
-elif systemctl is-enabled sshd.service > /dev/null 2>&1; then
-    echo_green "SSHD service is enabled ✓"
+## Step 3c: Enable SSH service at boot (systemctl doesn't work well in chroot, so create symlinks directly)
+echo_green "Enabling SSH service via direct symlink (chroot-compatible) ..."
+# Disable socket activation first (conflicts with service)
+rm -f /etc/systemd/system/sockets.target.wants/ssh.socket 2>/dev/null || true
+# Create symlinks directly in multi-user.target.wants for both ssh and sshd
+mkdir -p /etc/systemd/system/multi-user.target.wants/
+if [[ -f /lib/systemd/system/ssh.service ]]; then
+    ln -sf /lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ssh.service
+    echo_green "SSH service linked to multi-user.target ✓"
+elif [[ -f /lib/systemd/system/sshd.service ]]; then
+    ln -sf /lib/systemd/system/sshd.service /etc/systemd/system/multi-user.target.wants/sshd.service
+    echo_green "SSHD service linked to multi-user.target ✓"
 else
-    echo_yellow "WARNING: SSH service may not be enabled, attempting manual fix..."
-    mkdir -p /etc/systemd/system/multi-user.target.wants/
-    ln -sf /lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ssh.service 2>/dev/null || \
-    ln -sf /lib/systemd/system/sshd.service /etc/systemd/system/multi-user.target.wants/sshd.service 2>/dev/null || true
+    echo_yellow "WARNING: SSH service not found, may not start on boot"
 fi
+# Also try systemctl enable for Debian compatibility
+systemctl enable ssh-keygen.service 2>/dev/null || true
+systemctl enable ssh.service 2>/dev/null || systemctl enable sshd.service 2>/dev/null || true
 
 ## Step 4: Remove first login prompt
 if [[ -f "/root/.not_logged_in_yet" ]]; then
