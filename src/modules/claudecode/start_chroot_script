@@ -24,8 +24,12 @@ apt-get update
 # shellcheck disable=SC2086
 check_install_pkgs ${CLAUDECODE_DEPS}
 
-## Step 2: Install Node.js from Debian repos (Trixie has Node.js 20 natively)
-echo_green "Installing Node.js from Debian Trixie repos (armhf supported) ..."
+## Step 2: Configure NodeSource repository for Node.js (use CLAUDECODE_NODE_MAJOR)
+echo_green "Configuring NodeSource repository for Node.js ${CLAUDECODE_NODE_MAJOR} (armhf supported) ..."
+curl -fsSL "https://deb.nodesource.com/setup_${CLAUDECODE_NODE_MAJOR}.x" | bash -
+
+## Step 2b: Install Node.js from NodeSource (ensures correct version for armhf)
+echo_green "Installing Node.js ${CLAUDECODE_NODE_MAJOR} from NodeSource ..."
 apt-get install --yes nodejs npm
 
 echo_green "Node.js version: $(node --version)"
@@ -42,7 +46,7 @@ swapon /var/swap || true
 
 ## Step 4: Install Claude Code CLI globally
 echo_green "Installing Claude Code CLI (${CLAUDECODE_NPM_PACKAGE}) ..."
-npm install -g "${CLAUDECODE_NPM_PACKAGE}"
+npm install -g "${CLAUDECODE_NPM_PACKAGE}" || { echo_red "FAILED: npm install ${CLAUDECODE_NPM_PACKAGE}"; exit 1; }
 
 ## Step 4b: Install Claude Code Web UI (Yumi Lab fork with API + Cron)
 echo_green "Installing Claude Code Web UI from Yumi Lab fork ..."
@@ -64,11 +68,18 @@ else
     echo_green "Searching for claude binary ..."
     find /usr/local -name "claude" -type f 2>/dev/null || true
     # Create symlink if binary exists in node_modules but not in PATH
-    CLAUDE_PKG_BIN="$(npm root -g)/claude-code/cli.js"
+    # Fix: correct package name is @anthropic-ai/claude-code, not claude-code
+    CLAUDE_PKG_BIN="$(npm root -g)/@anthropic-ai/claude-code/bin/claude"
+    if [[ ! -f "${CLAUDE_PKG_BIN}" ]]; then
+        # Try alternative path
+        CLAUDE_PKG_BIN="$(npm root -g)/@anthropic-ai/claude-code/dist/cli.js"
+    fi
     if [[ -f "${CLAUDE_PKG_BIN}" ]]; then
         ln -sf "${CLAUDE_PKG_BIN}" /usr/local/bin/claude
         chmod +x /usr/local/bin/claude
         echo_green "Created symlink /usr/local/bin/claude -> ${CLAUDE_PKG_BIN}"
+    else
+        echo_yellow "WARNING: Claude binary not found in expected paths"
     fi
 fi
 
