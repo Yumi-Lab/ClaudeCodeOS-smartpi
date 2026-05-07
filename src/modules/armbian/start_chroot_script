@@ -95,10 +95,15 @@ if [[ -f /lib/systemd/system/ssh.service ]]; then
     echo_green "SSH service enabled (service activation fallback) ✓"
 fi
 
-# Enable ssh-keygen service (generates host keys at first boot)
-if [[ -f /lib/systemd/system/ssh-keygen.service ]]; then
-    ln -sf /lib/systemd/system/ssh-keygen.service /etc/systemd/system/multi-user.target.wants/ssh-keygen.service
+# Enable ssh-keygen service that we just created (generates host keys at first boot)
+# NOTE: Service is in /etc (just created above), not /lib
+if [[ -f /etc/systemd/system/ssh-keygen.service ]]; then
+    mkdir -p /etc/systemd/system/multi-user.target.wants/
+    ln -sf /etc/systemd/system/ssh-keygen.service /etc/systemd/system/multi-user.target.wants/ssh-keygen.service
     echo_green "SSH key generation service enabled ✓"
+else
+    echo_red "FAILED: ssh-keygen.service not found at /etc/systemd/system/ssh-keygen.service"
+    exit 1
 fi
 
 ## Step 4: Remove first login prompt
