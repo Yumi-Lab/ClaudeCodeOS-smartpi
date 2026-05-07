@@ -77,24 +77,29 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 SSHEOF
-## Step 3c: Enable SSH service at boot (systemctl doesn't work well in chroot, so create symlinks directly)
-echo_green "Enabling SSH service via direct symlink (chroot-compatible) ..."
-# Disable socket activation first (conflicts with service)
-rm -f /etc/systemd/system/sockets.target.wants/ssh.socket
-# Create symlinks directly in multi-user.target.wants for both ssh and sshd
+## Step 3c: Re-enable SSH (socket activation is the default in Trixie)
+echo_green "Re-enabling SSH via socket activation (Trixie default) ..."
+# Armbian base image uses ssh.socket for socket activation (more efficient)
+# Ensure socket is enabled and service symlink exists
+mkdir -p /etc/systemd/system/sockets.target.wants/
 mkdir -p /etc/systemd/system/multi-user.target.wants/
+
+# Enable both socket and service for redundancy
+if [[ -f /lib/systemd/system/ssh.socket ]]; then
+    ln -sf /lib/systemd/system/ssh.socket /etc/systemd/system/sockets.target.wants/ssh.socket
+    echo_green "SSH socket enabled (socket activation) ✓"
+fi
+
 if [[ -f /lib/systemd/system/ssh.service ]]; then
     ln -sf /lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ssh.service
-    echo_green "SSH service linked to multi-user.target ✓"
-elif [[ -f /lib/systemd/system/sshd.service ]]; then
-    ln -sf /lib/systemd/system/sshd.service /etc/systemd/system/multi-user.target.wants/sshd.service
-    echo_green "SSHD service linked to multi-user.target ✓"
-else
-    echo_yellow "WARNING: SSH service not found, may not start on boot"
+    echo_green "SSH service enabled (service activation fallback) ✓"
 fi
-# Also try systemctl enable for Debian compatibility (must succeed)
-systemctl enable ssh-keygen.service || { echo_red "FAILED: Could not enable ssh-keygen.service"; exit 1; }
-systemctl enable ssh.service || systemctl enable sshd.service || { echo_red "FAILED: Could not enable SSH service"; exit 1; }
+
+# Enable ssh-keygen service (generates host keys at first boot)
+if [[ -f /lib/systemd/system/ssh-keygen.service ]]; then
+    ln -sf /lib/systemd/system/ssh-keygen.service /etc/systemd/system/multi-user.target.wants/ssh-keygen.service
+    echo_green "SSH key generation service enabled ✓"
+fi
 
 ## Step 4: Remove first login prompt
 if [[ -f "/root/.not_logged_in_yet" ]]; then
