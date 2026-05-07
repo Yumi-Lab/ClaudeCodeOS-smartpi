@@ -6,11 +6,12 @@ type: project
 
 # Protocol: ClaudeCodeOS — Claude-Code-Board Integration
 
-**Status: READY FOR PLANNING**
+**Status: IN PROGRESS — Phase B to start**
 **Project:** `/Users/nicolasmichaut/Documents/GitHub/ClaudeCodeOS-smartpi`
-**Dependency:** `/Users/nicolasmichaut/Documents/GitHub/Claude-Code-Board` (branch: `protocol/openai-api-bridge`)
+**Branch:** `protocol/fix-claude-cli-nodejs20`
+**Dependency:** `/Users/nicolasmichaut/Documents/GitHub/Claude-Code-Board` (branch: `master`)
 **Created:** 2026-05-07
-**Last commit:** (pending)
+**Last commit:** `37e59aa` [phase-runner] Phase A — Add Claude-Code-Board as Git Submodule
 
 ---
 
@@ -79,9 +80,9 @@ Claude-Code-Board (Express.js + SQLite) provides an OpenAI-compatible API with k
 
 ---
 
-## Phase A — Add Claude-Code-Board as Git Submodule
+## Phase A — Add Claude-Code-Board as Git Submodule ✅
 
-**Risk:** Low | **Scope:** 10 min | **TDD:** Not applicable
+**Risk:** Low | **Scope:** 10 min | **TDD:** Not applicable | **Completed:** 2026-05-07
 
 ### Work
 
@@ -282,7 +283,20 @@ Claude-Code-Board (Express.js + SQLite) provides an OpenAI-compatible API with k
 
 ## Test Log
 
-(To be populated during execution)
+### Phase A — Execution Log
+
+| Task | Action | Expected | Actual | Status |
+|------|--------|----------|--------|--------|
+| A1 | Add submodule | Submodule registered with correct URL | ✅ Added with Yumi-Lab URL, branch master (protocol said main, but repo uses master) | PASS |
+| A2 | Initialize | Files present, .gitmodules correct, git status clean | ✅ All files initialized, .gitmodules created, status clean | PASS |
+| Verification | .gitmodules exists | File present with correct content | ✅ `[submodule "src/modules/board/vendor/claude-code-board"]` with URL and branch | PASS |
+| Verification | Submodule directory | Directory at correct path with files | ✅ 15 files/dirs present including backend/, frontend/, package.json | PASS |
+| Verification | git submodule status | Shows commit hash | ✅ `9db5bb7b9e80b9fd496b677e4577553a9dc43cc1 heads/master` | PASS |
+| Commit | Phase A | Commit created | ✅ `37e59aa [phase-runner] Phase A — Add Claude-Code-Board as Git Submodule` | PASS |
+
+**Notes:**
+- Protocol specified branch `main`, but Claude-Code-Board repository uses `master` as default. Adjusted to track `master` (stable).
+- Repository URL: Protocol said `nicolasmichaut/Claude-Code-Board`, actual is `Yumi-Lab/Claude-Code-Board`. Used correct Yumi-Lab org.
 
 ---
 
