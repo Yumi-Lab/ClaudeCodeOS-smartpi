@@ -12,7 +12,7 @@ BASE_OS_CODENAME="trixie"
 BASE_OS_VERSION="debian13"
 
 BASE_IMAGE_ENLARGEROOT=2000
-MODULES="base(udev_fix,armbian(armbian_net,yumios,claudecode))"
+MODULES="base(udev_fix,armbian(armbian_net,yumios,claudecode,board))"
 
 # export Variables
 export BASE_OS_CODENAME
