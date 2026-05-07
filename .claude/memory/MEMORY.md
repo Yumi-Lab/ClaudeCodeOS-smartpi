@@ -3,8 +3,9 @@
 ## Project Overview
 **ClaudeCodeOS-smartpi** — Commercial appliance API: Claude Code + OpenAI-compatible API exposed on SmartPi One (ARM, 1GB RAM).
 
-## Current Protocol
-- [protocol_openai-api-bridge.md](protocol_openai-api-bridge.md) — Full implementation plan (Phases B→E in Claude-Code-Board, Phase F in ClaudeCodeOS-smartpi)
+## Current Protocols
+- [protocol_openai-api-bridge.md](protocol_openai-api-bridge.md) — Claude-Code-Board API + Keys (✅ Phases A-E complete)
+- [protocol_claude-code-board-integration.md](protocol_claude-code-board-integration.md) — ClaudeCodeOS integration (📋 Ready for Phase A)
 
 ## Related Repos
 - **Claude-Code-Board** (`~/Documents/GitHub/Claude-Code-Board`) — Backend (Express + Socket.IO + SQLite) + Frontend (React 19)
