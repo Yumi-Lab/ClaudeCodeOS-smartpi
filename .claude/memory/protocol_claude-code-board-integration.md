@@ -6,12 +6,12 @@ type: project
 
 # Protocol: ClaudeCodeOS — Claude-Code-Board Integration
 
-**Status: IN PROGRESS — Phase B to start**
+**Status: IN PROGRESS — Phase C to start**
 **Project:** `/Users/nicolasmichaut/Documents/GitHub/ClaudeCodeOS-smartpi`
 **Branch:** `protocol/fix-claude-cli-nodejs20`
 **Dependency:** `/Users/nicolasmichaut/Documents/GitHub/Claude-Code-Board` (branch: `master`)
 **Created:** 2026-05-07
-**Last commit:** `37e59aa` [phase-runner] Phase A — Add Claude-Code-Board as Git Submodule
+**Last commit:** `7387595` [phase-runner] Phase B — Create Board Install Module
 
 ---
 
@@ -282,6 +282,26 @@ Claude-Code-Board (Express.js + SQLite) provides an OpenAI-compatible API with k
 ---
 
 ## Test Log
+
+### Phase B — Execution Log
+
+| Task | Action | Expected | Actual | Status |
+|------|--------|----------|--------|--------|
+| B1 | Create config file | Config variables defined, syntax valid | ✅ Created with 7 variables (NODE_MAJOR, ADMIN_USER/PASSWORD, PORT, DATA_DIR, DEPS) | PASS |
+| B2 | Create install script | Script installs Node.js, copies board, installs npm deps, enables systemd | ✅ Full script created with error handling, follows claudecode pattern | PASS |
+| B3 | Create systemd files | Service and env config files present | ✅ Both files created at correct paths | PASS |
+| Verification | Config syntax | Bash -n passes | ✅ `bash -n config` returns OK | PASS |
+| Verification | Script syntax | Bash -n passes | ✅ `bash -n start_chroot_script` returns OK | PASS |
+| Verification | Module pattern | Matches claudecode module structure | ✅ Uses `unpack` command, proper error handling, follows conventions | PASS |
+| Commit | Phase B | Commit created with proper message | ✅ `7387595 [phase-runner] Phase B — Create Board Install Module` | PASS |
+
+**Notes:**
+- Module follows CustomPiOS pattern: config → start_chroot_script → filesystem/ structure
+- No CHROOT_PATH usage needed (CustomPiOS handles this via `unpack` command)
+- Systemd service configured with resource limits appropriate for Pi (512M memory, CPU shares)
+- Both credential files in config match Board's expected env vars
+
+---
 
 ### Phase A — Execution Log
 
