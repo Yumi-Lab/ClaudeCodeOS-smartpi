@@ -78,6 +78,18 @@ systemctl enable ssh-keygen.service
 # Make sure ssh service is enabled (disable socket activation to avoid conflict)
 systemctl disable ssh.socket 2>/dev/null || true
 systemctl enable ssh.service || systemctl enable sshd.service || true
+# Verify SSH is properly configured to auto-start on boot
+echo_green "Verifying SSH auto-start configuration ..."
+if systemctl is-enabled ssh.service > /dev/null 2>&1; then
+    echo_green "SSH service is enabled ✓"
+elif systemctl is-enabled sshd.service > /dev/null 2>&1; then
+    echo_green "SSHD service is enabled ✓"
+else
+    echo_yellow "WARNING: SSH service may not be enabled, attempting manual fix..."
+    mkdir -p /etc/systemd/system/multi-user.target.wants/
+    ln -sf /lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ssh.service 2>/dev/null || \
+    ln -sf /lib/systemd/system/sshd.service /etc/systemd/system/multi-user.target.wants/sshd.service 2>/dev/null || true
+fi
 
 ## Step 4: Remove first login prompt
 if [[ -f "/root/.not_logged_in_yet" ]]; then
