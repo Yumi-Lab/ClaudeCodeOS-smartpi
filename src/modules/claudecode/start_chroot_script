@@ -24,12 +24,10 @@ apt-get update
 # shellcheck disable=SC2086
 check_install_pkgs ${CLAUDECODE_DEPS}
 
-## Step 2: Configure NodeSource repository for Node.js (use CLAUDECODE_NODE_MAJOR)
-echo_green "Configuring NodeSource repository for Node.js ${CLAUDECODE_NODE_MAJOR} (armhf supported) ..."
-curl -fsSL "https://deb.nodesource.com/setup_${CLAUDECODE_NODE_MAJOR}.x" | bash -
-
-## Step 2b: Install Node.js from NodeSource (ensures correct version for armhf)
-echo_green "Installing Node.js ${CLAUDECODE_NODE_MAJOR} from NodeSource ..."
+## Step 2: Install Node.js from Debian repositories
+## Note: Using Debian packages for compatibility with all architectures (armhf, arm64, amd64)
+## NodeSource doesn't support armhf (32-bit ARM), so we use Debian packages universally
+echo_green "Installing Node.js and npm from Debian repositories ..."
 apt-get install --yes nodejs npm
 
 echo_green "Node.js version: $(node --version)"
