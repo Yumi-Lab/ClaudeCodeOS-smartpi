@@ -52,8 +52,11 @@ else
     mkdir -p /etc/ssh/sshd_config.d
     echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/99-claudecodeos.conf
 fi
-sed -i 's/^X11Forwarding/#X11Forwarding/' /etc/ssh/sshd_config 2>/dev/null || true
-sed -i 's/^#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config 2>/dev/null || true
+# Harden SSH config (only if file exists)
+if [[ -f /etc/ssh/sshd_config ]]; then
+    sed -i 's/^X11Forwarding/#X11Forwarding/' /etc/ssh/sshd_config
+    sed -i 's/^#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config
+fi
 
 ## Step 3b: Ensure SSH host keys will be generated at first boot
 echo_green "Ensuring SSH host key regeneration at first boot ..."
@@ -77,7 +80,7 @@ SSHEOF
 ## Step 3c: Enable SSH service at boot (systemctl doesn't work well in chroot, so create symlinks directly)
 echo_green "Enabling SSH service via direct symlink (chroot-compatible) ..."
 # Disable socket activation first (conflicts with service)
-rm -f /etc/systemd/system/sockets.target.wants/ssh.socket 2>/dev/null || true
+rm -f /etc/systemd/system/sockets.target.wants/ssh.socket
 # Create symlinks directly in multi-user.target.wants for both ssh and sshd
 mkdir -p /etc/systemd/system/multi-user.target.wants/
 if [[ -f /lib/systemd/system/ssh.service ]]; then
@@ -89,9 +92,9 @@ elif [[ -f /lib/systemd/system/sshd.service ]]; then
 else
     echo_yellow "WARNING: SSH service not found, may not start on boot"
 fi
-# Also try systemctl enable for Debian compatibility
-systemctl enable ssh-keygen.service 2>/dev/null || true
-systemctl enable ssh.service 2>/dev/null || systemctl enable sshd.service 2>/dev/null || true
+# Also try systemctl enable for Debian compatibility (must succeed)
+systemctl enable ssh-keygen.service || { echo_red "FAILED: Could not enable ssh-keygen.service"; exit 1; }
+systemctl enable ssh.service || systemctl enable sshd.service || { echo_red "FAILED: Could not enable SSH service"; exit 1; }
 
 ## Step 4: Remove first login prompt
 if [[ -f "/root/.not_logged_in_yet" ]]; then
@@ -111,6 +114,9 @@ echo_green "Enable SPI interface on SmartPi ..."
 cp "${ARMBIAN_CONFIG_TXT_FILE}" "${ARMBIAN_CONFIG_BAK_FILE}"
 echo "spidev" >> "${ARMBIAN_MODULES_FILE}"
 
-## Step 7: Remove unattended-upgrades
+## Step 7: Remove unattended-upgrades (if installed)
 echo_green "Remove 'unattended-upgrades' service ..."
-apt-get remove --purge --yes unattended-upgrades || true
+# Only remove if package is installed
+if dpkg -l | grep -q "unattended-upgrades"; then
+    apt-get remove --purge --yes unattended-upgrades || { echo_yellow "WARNING: Could not remove unattended-upgrades"; }
+fi

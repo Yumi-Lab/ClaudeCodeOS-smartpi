@@ -40,7 +40,8 @@ if [[ ! -f /var/swap ]]; then
     chmod 600 /var/swap
     mkswap /var/swap
 fi
-swapon /var/swap || true
+# Enable swap (must succeed since we just created it)
+swapon /var/swap
 
 ## Step 4: Install Claude Code CLI globally
 echo_green "Installing Claude Code CLI (${CLAUDECODE_NPM_PACKAGE}) ..."
@@ -56,7 +57,7 @@ chmod +x /usr/local/bin/claude-code-webui
 
 # Verify installation
 echo_green "npm global root: $(npm root -g)"
-ls -la "$(npm root -g)/" || true
+ls -la "$(npm root -g)/" || { echo_red "FAILED: npm global directory not accessible"; exit 1; }
 
 # Ensure claude binary is in PATH and executable
 if command -v claude > /dev/null 2>&1; then
@@ -64,7 +65,7 @@ if command -v claude > /dev/null 2>&1; then
 else
     # npm 9 on Debian puts binaries in /usr/local/bin
     echo_green "Searching for claude binary ..."
-    find /usr/local -name "claude" -type f 2>/dev/null || true
+    find /usr/local -name "claude" -type f 2>/dev/null
     # Create symlink if binary exists in node_modules but not in PATH
     # Fix: correct package name is @anthropic-ai/claude-code, not claude-code
     CLAUDE_PKG_BIN="$(npm root -g)/@anthropic-ai/claude-code/bin/claude"
@@ -82,7 +83,9 @@ else
 fi
 
 ## Step 5: Cleanup swap (will be re-created at boot if needed)
-swapoff /var/swap || true
+if [[ -f /var/swap ]]; then
+    swapoff /var/swap || { echo_yellow "WARNING: Could not disable swap"; }
+fi
 
 ## Step 6: Configure persistent swap for runtime
 echo_green "Configuring persistent swap ..."
