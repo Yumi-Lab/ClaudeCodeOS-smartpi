@@ -38,16 +38,13 @@ echo_green "Creating Claude Code Board installation directory ..."
 mkdir -p /opt/claude-code-board
 chmod 755 /opt/claude-code-board
 
-## Step 4: Copy Claude Code Board from submodule vendor directory
-echo_green "Copying Claude Code Board from submodule ..."
-# Copy the entire board application from the vendor submodule
-if [[ -d /vendor/claude-code-board ]]; then
-    cp -r /vendor/claude-code-board/* /opt/claude-code-board/
-    echo_green "Claude Code Board copied successfully"
-else
-    echo_red "ERROR: Submodule not found at /vendor/claude-code-board"
+## Step 4: Clone Claude Code Board from GitHub repository
+echo_green "Cloning Claude Code Board from GitHub ..."
+# Clone the board repository from the stable master branch
+git clone -b master https://github.com/Yumi-Lab/Claude-Code-Board.git /opt/claude-code-board || {
+    echo_red "FAILED: Could not clone Claude Code Board repository"
     exit 1
-fi
+}
 
 ## Step 5: Install npm dependencies
 echo_green "Installing npm dependencies for Claude Code Board ..."
