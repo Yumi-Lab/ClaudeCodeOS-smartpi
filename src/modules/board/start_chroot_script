@@ -24,22 +24,11 @@ apt-get update
 # shellcheck disable=SC2086
 check_install_pkgs ${BOARD_DEPS}
 
-## Step 2: Detect architecture and install Node.js accordingly
-ARCH=$(dpkg --print-architecture)
-echo_green "Detected architecture: ${ARCH}"
-
-if [[ "${ARCH}" == "armhf" ]]; then
-    # For 32-bit ARM (armhf), use Debian packages (NodeSource doesn't support armhf)
-    echo_green "Installing Node.js from Debian repositories (armhf architecture) ..."
-    apt-get install --yes nodejs npm
-else
-    # For 64-bit ARM (arm64) and x86_64 (amd64), use NodeSource for newer LTS versions
-    echo_green "Configuring NodeSource repository for Node.js ${BOARD_NODE_MAJOR} ..."
-    curl -fsSL "https://deb.nodesource.com/setup_${BOARD_NODE_MAJOR}.x" | bash - || {
-        echo_yellow "NodeSource setup failed, falling back to Debian packages ..."
-        apt-get install --yes nodejs npm
-    }
-fi
+## Step 2: Install Node.js from Debian repositories
+## Note: Using Debian packages for compatibility with all architectures (armhf, arm64, amd64)
+## NodeSource doesn't support armhf (32-bit ARM), so we use Debian packages universally
+echo_green "Installing Node.js and npm from Debian repositories ..."
+apt-get install --yes nodejs npm
 
 echo_green "Node.js version: $(node --version)"
 echo_green "npm version: $(npm --version)"
