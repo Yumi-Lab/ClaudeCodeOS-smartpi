@@ -43,68 +43,11 @@ groupadd gpio
 if_group_exists_run i2c usermod -aG i2c "${BASE_USER}"
 usermod -aG video,audio,plugdev,games,netdev,sudo,systemd-journal,gpio "${BASE_USER}"
 
-## Step 3: patch sshd_config (Trixie uses sshd_config.d/ drop-ins)
+## Step 3: patch sshd_config (harden only, don't touch services/keys)
 echo_green "Hardening SSH config ..."
-# Trixie/Bookworm: patch main config if directives exist, otherwise use drop-in
-if grep -q "PermitRootLogin" /etc/ssh/sshd_config 2>/dev/null; then
-    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-else
-    mkdir -p /etc/ssh/sshd_config.d
-    echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/99-claudecodeos.conf
-fi
-# Harden SSH config (only if file exists)
-if [[ -f /etc/ssh/sshd_config ]]; then
-    sed -i 's/^X11Forwarding/#X11Forwarding/' /etc/ssh/sshd_config
-    sed -i 's/^#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config
-fi
-
-## Step 3b: Ensure SSH host keys will be generated at first boot
-echo_green "Ensuring SSH host key regeneration at first boot ..."
-# Remove existing host keys so they get regenerated on first boot
-rm -f /etc/ssh/ssh_host_*
-# Create a first-boot service to regenerate keys if Armbian's service is missing
-cat > /etc/systemd/system/ssh-keygen.service << 'SSHEOF'
-[Unit]
-Description=Generate SSH host keys if missing
-Before=ssh.service
-ConditionPathExistsGlob=!/etc/ssh/ssh_host_*_key
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/ssh-keygen -A
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-SSHEOF
-## Step 3c: Re-enable SSH (socket activation is the default in Trixie)
-echo_green "Re-enabling SSH via socket activation (Trixie default) ..."
-# Armbian base image uses ssh.socket for socket activation (more efficient)
-# Ensure socket is enabled and service symlink exists
-mkdir -p /etc/systemd/system/sockets.target.wants/
-mkdir -p /etc/systemd/system/multi-user.target.wants/
-
-# Enable both socket and service for redundancy
-if [[ -f /lib/systemd/system/ssh.socket ]]; then
-    ln -sf /lib/systemd/system/ssh.socket /etc/systemd/system/sockets.target.wants/ssh.socket
-    echo_green "SSH socket enabled (socket activation) ✓"
-fi
-
-if [[ -f /lib/systemd/system/ssh.service ]]; then
-    ln -sf /lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ssh.service
-    echo_green "SSH service enabled (service activation fallback) ✓"
-fi
-
-# Enable ssh-keygen service that we just created (generates host keys at first boot)
-# NOTE: Service is in /etc (just created above), not /lib
-if [[ -f /etc/systemd/system/ssh-keygen.service ]]; then
-    mkdir -p /etc/systemd/system/multi-user.target.wants/
-    ln -sf /etc/systemd/system/ssh-keygen.service /etc/systemd/system/multi-user.target.wants/ssh-keygen.service
-    echo_green "SSH key generation service enabled ✓"
-else
-    echo_red "FAILED: ssh-keygen.service not found at /etc/systemd/system/ssh-keygen.service"
-    exit 1
-fi
+sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/^X11Forwarding/#X11Forwarding/' /etc/ssh/sshd_config
+sed -i 's/^#MaxAuthTries 6/MaxAuthTries 3/' /etc/ssh/sshd_config
 
 ## Step 4: Remove first login prompt
 if [[ -f "/root/.not_logged_in_yet" ]]; then
